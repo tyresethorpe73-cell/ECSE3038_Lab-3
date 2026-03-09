@@ -45,27 +45,23 @@ def root():
 
 
 @app.post("/work-orders", status_code=status.HTTP_201_CREATED)
-async def create_work_order(order: WorkOrderUpdate):
+async def create_work_order(order: WorkOrder):
 
     doc = order.model_dump()
 
-    # Convert UUID to string
     doc["id"] = str(doc["id"])
-
-    # Convert datetime to ISO string
     doc["created_at"] = doc["created_at"].isoformat()
 
     try:
-        result = await collection.insert_one(doc)
-        doc["_id"] = str(result.inserted_id)
-        return doc
+        await collection.insert_one(doc)
+        return order
     except Exception as e:
-        print("MongoDB insert error:", e)
         raise HTTPException(status_code=500, detail=str(e))
 
 
 @app.get("/work-orders")
 async def get_work_orders():
+
     orders = []
 
     async for doc in collection.find({}, {"_id": 0}):
@@ -74,17 +70,12 @@ async def get_work_orders():
 
     return orders
 
-@app.get("/work-orders")
-async def get_work_orders(priority: Optional[str] = None):
-
-    query = {}
-
-    if priority:
-        query["priority"] = priority
+@app.get("/work-orders/filter")
+async def filter_work_orders(priority: Literal["low","medium","high","critical"]):
 
     orders = []
 
-    async for doc in collection.find(query, {"_id": 0}):
+    async for doc in collection.find({"priority": priority}, {"_id": 0}):
         doc["id"] = str(doc["id"])
         orders.append(doc)
 
