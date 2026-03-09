@@ -7,7 +7,6 @@ from typing import Literal, Optional
 from dotenv import load_dotenv
 import os
 
-
 load_dotenv()
 
 print("MONGO_URI:", os.getenv("MONGO_URI"))
@@ -17,9 +16,7 @@ client = AsyncIOMotorClient(MONGO_URI)
 db = client["Engineering_2026"]
 collection = db["work_orders_2026"]
 
-
 app = FastAPI()
-
 
 class WorkOrder(BaseModel):
     id: UUID = Field(default_factory=uuid4)
@@ -37,8 +34,7 @@ class WorkOrderUpdate(BaseModel):
     priority: Optional[Literal["low", "medium", "high", "critical"]] = None
     status: Optional[Literal["open", "in_progress", "completed", "cancelled"]] = None
 
-
-
+# sample request
 @app.get("/")
 def root():
     return {"Note:": "API up and running !!"}
@@ -57,7 +53,6 @@ async def create_work_order(order: WorkOrder):
         return order
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
-
 
 @app.get("/work-orders")
 async def get_work_orders():
@@ -93,8 +88,6 @@ async def get_work_order(order_id: str):
         detail="Work order not found"
         )
     return doc
-
-
 
 @app.patch("/work-orders/{order_id}")
 async def update_work_order(order_id: str, partial_update: WorkOrderUpdate):
