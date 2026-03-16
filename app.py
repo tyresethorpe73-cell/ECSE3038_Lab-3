@@ -9,8 +9,6 @@ import os
 
 load_dotenv()
 
-print("MONGO_URI:", os.getenv("MONGO_URI"))
-
 MONGO_URI = os.getenv("MONGO_URI")
 client = AsyncIOMotorClient(MONGO_URI)
 db = client["Engineering_2026"]
@@ -118,34 +116,34 @@ async def update_work_order(order_id: str, partial_update: WorkOrderUpdate):
 @app.delete("/work-orders/{order_id}", status_code=status.HTTP_204_NO_CONTENT)
 async def delete_work_order(order_id: str):
 
-  result = await collection.delete_one({"id": order_id})
+    result = await collection.delete_one({"id": order_id})
 
-  if (result.deleted_count == 0):
-    raise HTTPException(
-        status_code=status.HTTP_404_NOT_FOUND,
-        detail="Work order not found"
-        )
-
-
-@app.put("/work-orders/{order_id}")
-async def replace_work_order(order_id: str, update: WorkOrder):
-
-    doc = update.model_dump()
-
-    doc["id"] = order_id
-    doc["created_at"] = doc["created_at"].isoformat()
-
-    result = await collection.update_one(
-        {"id": order_id},
-        {"$set": doc}
-    )
-
-    if result.matched_count == 0:
+    if result.deleted_count == 0:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
             detail="Work order not found"
         )
 
+@app.put("/work-orders/{order_id}")
+async def replace_work_order(order_id: str, update: WorkOrder):
+
+    existing = await collection.find_one({"id": order_id})
+
+    if not existing:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Work order not found"
+        )
+
+    doc = update.model_dump()
+
+    doc["id"] = order_id
+    doc["created_at"] = existing["created_at"]
+
+    await collection.update_one(
+        {"id": order_id},
+        {"$set": doc}
+    )
+
     updated_doc = await collection.find_one({"id": order_id}, {"_id": 0})
     return updated_doc
-
